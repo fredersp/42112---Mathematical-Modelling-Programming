@@ -70,11 +70,13 @@ AS = Model(Gurobi.Optimizer)
 # SOLVE
 optimize!(AS)
 
-opt_pairs = value(y)
+# Second best solution
 
-@constraint(AS, sum(y[f,k] for (f,k) in opt_pairs) <= F-1)
+#opt_pairs = value(y)
 
-optimize!(AS)
+#@constraint(AS, sum(y[f,k] for (f,k) in opt_pairs) <= F-1)
+
+#optimize!(AS)
 
 
 if termination_status(AS) == MOI.OPTIMAL
