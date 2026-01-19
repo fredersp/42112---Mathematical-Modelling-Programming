@@ -70,19 +70,44 @@ AS = Model(Gurobi.Optimizer)
 # SOLVE
 optimize!(AS)
 
-# Second best solution
-
-#opt_pairs = value(y)
-
-#@constraint(AS, sum(y[f,k] for (f,k) in opt_pairs) <= F-1)
-
-#optimize!(AS)
-
 
 if termination_status(AS) == MOI.OPTIMAL
         println("Optimal objective value: $(objective_value(AS))")
+        println("\nAircraft  times and slots:")
+        for f=1:F, k=1:K
+            if value(y[f,k]) > 0.5
+                println("Aircraft $f lands at time $k")
+            end
+        end
     else
         println("No optimal solution available")
-end    
+end
 
+
+
+# Second best solution
+
+var = []
+
+for f=1:F, k=1:K
+    if value(y[f,k]) > 0.5
+        push!(var, (f,k))
+    end
+end
+
+@constraint(AS, sum(y[f,k] for (f,k) in var) <= F - 1)
+
+optimize!(AS)
+
+if termination_status(AS) == MOI.OPTIMAL
+        println("Optimal objective value: $(objective_value(AS))")
+        println("\nAircraft  times and slots:")
+        for f=1:F, k=1:K
+            if value(y[f,k]) > 0.5
+                println("Aircraft $f lands at time $k")
+            end
+        end
+    else
+        println("No optimal solution available")
+end
 
