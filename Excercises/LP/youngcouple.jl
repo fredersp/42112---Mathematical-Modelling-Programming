@@ -23,10 +23,11 @@ YC = Model(Gurobi.Optimizer)
 
 @objective(YC, Min, sum(x[p,t] * time[p,t] for p=1:P, t=1:T))
 
-@constraint(YC, [p=1:P], sum(x[p,t] for t=1:T) == 4)
+
+@constraint(YC, [t=1:T], sum(x[p,t] for p=1:P) == 1)
 
 
 optimize!(YC)
 
 println("Status: ", termination_status(YC))
-println("Finish time: ", value(s[last]))
+println("Objective value: ", objective_value(YC))
