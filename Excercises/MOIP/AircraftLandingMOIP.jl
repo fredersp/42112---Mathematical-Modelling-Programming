@@ -30,50 +30,50 @@ SEP = [
 F = length(TT)
 # Number of timeslots
 K = size(SEP,1)
-
 P = size(SEP,1)
 Q = size(SEP,1)
-M = 400 
+M = 100 
 
 ###############################################
 # MODEL
 AS = Model(Gurobi.Optimizer)
 
+# Landing time
 @variable(AS, x[1:F], Int)
 # Target time difference auxillary
 @variable(AS, td[1:F], Int)
 # Landing difference auxillary
 @variable(AS, y[1:F,1:K], Bin)
 
-# New auxillary, for seperation difference
-@variable(AS, spt[1:P,1:Q])
+@variable(AS, d >= 0)
 
 #@objective(AS, Min, sum(td[f] * PEN[f] for f=1:F))
-@objective(AS, Max, sum(spt[p,q] for p=1:P,q=1:Q))
+
+@objective(AS, Max, d)
 
 # Constraints
-@constraint(AS, [p=1:P,q=1:Q,k=1:K-1], 
-            x[q] - x[p] + (2 - y[p,k] - y[q,k+1]) - SEP[q,p] <= spt[q,p])
 
-@constraint(AS, [ q=1:Q,p=1:P,k=1:K-1], 
-            x[p] - x[q] + (2 - y[q,k] - y[p,k+1]) - SEP[p,q] <= spt[p,q])
-            
 @constraint(AS, [f=1:F], EA[f] <= x[f] <= LA[f])
 
-@constraint(AS, [f=1:F], td[f] >= x[f] - TT[f])
-@constraint(AS, [f=1:F], td[f] >= -x[f] + TT[f])
+# @constraint(AS, [f=1:F], td[f] >= x[f] - TT[f])
+# @constraint(AS, [f=1:F], td[f] >= -x[f] + TT[f])
+
 
 # Make sure that each flight is delegated a timeslot and each timeslot is delegated a flight
 @constraint(AS, [f=1:F], sum(y[f,k] for k=1:K) == 1)
 @constraint(AS, [k=1:K], sum(y[f,k] for f=1:F) == 1)
 
-#@constraint(AS, [p=1:P,q=1:Q,k=1:K-1], 
-#            x[q] - x[p] + M * (2 - y[p,k] - y[q,k+1]) >= SEP[p,q])
+@constraint(AS, [p=1:F, q=1:F, k=1:K-1; p!=q],
+    x[q] - x[p] + M*(2 - y[p,k] - y[q,k+1]) >= d
+)
+
+@constraint(AS, [p=1:F, q=1:F, k=1:K-1, l=k+1:K; p!=q],
+    x[q] - x[p] + M*(2 - y[p,k] - y[q,l]) >= SEP[p,q]
+)
+
 
 @constraint(AS, [k=1:K-1], y[6,k] + y[5,k+1] <= 1)
 @constraint(AS, [k=1:K-1], y[5,k] + y[6,k+1] <= 1)
-
-
 
 ##################################################
 
@@ -92,3 +92,4 @@ if termination_status(AS) == MOI.OPTIMAL
     else
         println("No optimal solution available")
 end
+
